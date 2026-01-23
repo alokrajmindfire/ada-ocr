@@ -1,0 +1,16 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+sqlalchemy==2.0.25
+pymysql==1.1.0
+cryptography==42.0.0
+pydantic==2.5.3
+google-generativeai==0.3.2
+pdf2image==1.17.0
+Pillow==10.2.0
+python-dotenv==1.0.0
+
+# Note: pdf2image requires poppler-utils to be installed on your system
+# For Ubuntu/Debian: sudo apt-get install poppler-utils
+# For macOS: brew install poppler
+# For Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases/
