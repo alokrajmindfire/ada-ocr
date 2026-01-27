@@ -11,4 +11,4 @@ class PDFDocumentSchema(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True  # <-- Important for SQLAlchemy
+        orm_mode = True
