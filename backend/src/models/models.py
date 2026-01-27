@@ -7,12 +7,13 @@ class PDFDocument(Base):
 
     id = Column(Integer, primary_key=True)
     filename = Column(String)
-    original_html = Column(Text)
-    edited_html = Column(Text)
+    original_html = Column(Text, nullable=True)
+    edited_html = Column(Text, nullable=True)
+
     
     
     # progress
-    status = Column(String, default="processing")   # processing | completed | failed
+    status = Column(String, default="processing")
     processed_pages = Column(Integer, default=0)
     total_pages = Column(Integer, default=0)
     
