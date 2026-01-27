@@ -3,7 +3,7 @@ from routes.pdf_routes import router
 from models.models import Base
 from config.database import engine
 from fastapi.middleware.cors import CORSMiddleware
-
+# from repositories.pdf_repository import migrate_tokens
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
-
+# migrate_tokens()
 @app.get("/health")
 def health():
     return {"status": "ok"}

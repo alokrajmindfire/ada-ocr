@@ -1,9 +1,39 @@
-from sqlalchemy.orm import Session
+from config.database import SessionLocal
 from models.models import PDFDocument
 from config.logger import get_logger
+from sqlalchemy.orm import Session
+logger = get_logger("pdf_migration")
 
-logger = get_logger("pdf_repository")
 
+def migrate_tokens():
+    db = SessionLocal()
+    try:
+        docs = db.query(PDFDocument).all()
+        logger.info(f"Migrating {len(docs)} documents")
+
+        for doc in docs:
+            if not doc.tokens_per_page:
+                doc.tokens_per_page = {}
+                continue
+
+            new_map = {}
+            for k, v in doc.tokens_per_page.items():
+                if isinstance(v, int):
+                    new_map[str(k)] = {
+                        "input_tokens": 0,
+                        "output_tokens": v,
+                        "total_tokens": v
+                    }
+                else:
+                    new_map[str(k)] = v
+
+            doc.tokens_per_page = new_map
+
+        db.commit()
+        logger.info("Token migration completed successfully")
+
+    finally:
+        db.close()
 
 class PDFRepository:
 

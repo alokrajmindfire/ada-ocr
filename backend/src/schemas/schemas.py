@@ -2,6 +2,11 @@ from pydantic import BaseModel
 from typing import Optional, Dict
 from datetime import datetime
 
+
+class TokenUsage(BaseModel):
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
 class PDFDocumentSchema(BaseModel):
     id: int
     filename: str
@@ -13,7 +18,7 @@ class PDFDocumentSchema(BaseModel):
     total_pages: int
 
     total_tokens: int
-    tokens_per_page: Optional[Dict[int, int]]
+    tokens_per_page: Dict[str, TokenUsage]
 
     created_at: datetime
     updated_at: datetime

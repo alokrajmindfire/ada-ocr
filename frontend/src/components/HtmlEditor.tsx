@@ -68,7 +68,7 @@ export function HtmlEditor({ document, onSaveSuccess }: HtmlEditorProps) {
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
-
+{/* <div dangerouslySetInnerHTML={{ __html: content }} /> */}
       {/* Editor */}
       <div className="flex-1 overflow-hidden">
         <EditorProvider>
