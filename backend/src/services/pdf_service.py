@@ -117,48 +117,23 @@ Rules:
 
 
 
-def process_pdf(pdf_bytes, doc, db):
+def process_pdf(pdf_bytes: bytes, doc, db):
     start_time = time.time()
     logger.info(f"Starting PDF processing for doc_id={doc.id}")
 
-    images = convert_from_bytes(pdf_bytes, dpi=300)
-    total_pages = len(images)
-    logger.info(f"PDF converted into {total_pages} images")
-
-    doc.total_pages = total_pages
-    db.commit()
-
-    html_pages = ['<div class="pdf-content">']
-    tokens_per_page = {}
-    total_tokens = 0
-
-    for page_num, image in enumerate(images, 1):
-        logger.info(f"Processing page {page_num}/{total_pages}")
-
-        page_html, usage = llm.generate_html(
-            PROMPT.format(page_num=page_num),
-            image
-        )
-
-        tokens_per_page[str(page_num)] = usage
-        total_tokens += usage["total_tokens"]
-
-        html_pages.append(page_html)
-
-        doc.processed_pages = page_num
-        doc.tokens_per_page = tokens_per_page
-        doc.total_tokens = total_tokens
-        db.commit()
-
-        logger.info(
-            f"Page {page_num} done | total_tokens={total_tokens}"
-        )
-
-    html_pages.append("</div>")
-
-    duration = round(time.time() - start_time, 2)
-    logger.info(
-        f"Finished PDF processing for doc_id={doc.id} in {duration}s"
+    html, usage = llm.generate_html_from_pdf(
+        prompt=PROMPT,
+        pdf_bytes=pdf_bytes
     )
 
-    return "\n".join(html_pages)
+    doc.total_pages = usage.get("pages", None)
+    doc.processed_pages = doc.total_pages
+    doc.tokens_per_page = usage.get("tokens_per_page", {})
+    doc.total_tokens = usage.get("total_tokens", 0)
+
+    db.commit()
+
+    duration = round(time.time() - start_time, 2)
+    logger.info(f"Finished PDF processing in {duration}s")
+
+    return f'<div class="pdf-content">\n{html}\n</div>'

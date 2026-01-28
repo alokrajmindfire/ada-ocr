@@ -9,14 +9,14 @@ router = APIRouter(prefix="/api")
 
 @router.post("/upload-pdf", response_model=PDFDocumentSchema)
 async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Only PDF allowed")
 
-    contents = await file.read()
+    pdf_bytes = await file.read()
     doc = PDFRepository.create(db, file.filename)
 
     try:
-        html = process_pdf(contents, doc, db)
+        html = process_pdf(pdf_bytes, doc, db)
         doc.original_html = html
         doc.edited_html = html
         doc.status = "completed"

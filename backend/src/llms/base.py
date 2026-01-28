@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from PIL import Image
 
 class BaseLLM(ABC):
 
     @abstractmethod
-    def generate_html(self, prompt: str, image: Image.Image) -> str:
+    def generate_html_from_pdf(self, prompt: str, pdf_bytes: bytes):
         pass

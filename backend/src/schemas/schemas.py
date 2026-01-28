@@ -14,8 +14,8 @@ class PDFDocumentSchema(BaseModel):
     original_html: Optional[str] = None
 
     status: str
-    processed_pages: int
-    total_pages: int
+    total_pages: Optional[int] = None
+    processed_pages: Optional[int] = None
 
     total_tokens: int
     tokens_per_page: Dict[str, TokenUsage]
