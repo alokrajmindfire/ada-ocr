@@ -55,7 +55,7 @@ export function HtmlEditor({ document, onSaveSuccess }: HtmlEditorProps) {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="">
       {/* Header */}
       <div className="border-b p-4 bg-white flex justify-between items-center">
         <h2 className="text-lg font-semibold">{document.filename}</h2>
@@ -68,9 +68,9 @@ export function HtmlEditor({ document, onSaveSuccess }: HtmlEditorProps) {
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
-{/* <div dangerouslySetInnerHTML={{ __html: content }} /> */}
+
       {/* Editor */}
-      <div className="flex-1 overflow-hidden">
+      <div className="">
         <EditorProvider>
           <Toolbar>
             <BtnBold />
