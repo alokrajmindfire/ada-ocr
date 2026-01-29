@@ -1,6 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, Query, File, Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas.schemas import PDFDocumentSchema
+from schemas.schemas import PDFDocumentSchema,PaginatedPDFResponse
 from config.database import get_db
 from repositories.pdf_repository import PDFRepository
 from services.pdf_service import process_pdf
@@ -29,10 +29,23 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
     db.refresh(doc)
     return doc
 
+@router.get("/documents", response_model=PaginatedPDFResponse)
+def list_docs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    offset = (page - 1) * page_size
 
-@router.get("/documents", response_model=list[PDFDocumentSchema])
-def list_docs(db: Session = Depends(get_db)):
-    return PDFRepository.get_all(db)
+    items = PDFRepository.get_all(db, page_size, offset)
+    total = PDFRepository.count(db)
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 @router.get("/documents/{doc_id}", response_model=PDFDocumentSchema)

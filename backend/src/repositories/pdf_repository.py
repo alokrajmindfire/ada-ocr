@@ -57,11 +57,19 @@ class PDFRepository:
         return doc
 
     @staticmethod
-    def get_all(db: Session):
-        logger.info("Fetching all PDFDocument records")
-        docs = db.query(PDFDocument).order_by(PDFDocument.created_at.desc()).all()
-        logger.info(f"Fetched {len(docs)} PDFDocument records")
-        return docs
+    def count(db: Session):
+        return db.query(PDFDocument).count()
+
+    @staticmethod
+    def get_all(db: Session, limit: int, offset: int):
+        logger.info(f"Fetching PDFDocuments limit={limit} offset={offset}")
+        return (
+            db.query(PDFDocument)
+            .order_by(PDFDocument.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     @staticmethod
     def get(db: Session, doc_id: int):

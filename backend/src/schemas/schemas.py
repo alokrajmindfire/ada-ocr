@@ -25,3 +25,13 @@ class PDFDocumentSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+from pydantic import BaseModel
+from typing import List
+
+class PaginatedPDFResponse(BaseModel):
+    items: List[PDFDocumentSchema]
+    total: int
+    page: int
+    page_size: int
