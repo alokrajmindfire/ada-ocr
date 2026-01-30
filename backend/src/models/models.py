@@ -6,14 +6,15 @@ class PDFDocument(Base):
     __tablename__ = "pdf_documents"
 
     id = Column(Integer, primary_key=True)
-    filename = Column(String)
+
+    # Must specify length for MySQL VARCHAR
+    filename = Column(String(255), nullable=False)
+    
     original_html = Column(Text, nullable=True)
     edited_html = Column(Text, nullable=True)
 
-    
-    
     # progress
-    status = Column(String, default="processing")
+    status = Column(String(50), default="processing")  # Added length
     processed_pages = Column(Integer, default=0)
     total_pages = Column(Integer, default=0)
     
