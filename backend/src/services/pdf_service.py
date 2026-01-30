@@ -9,7 +9,8 @@ from bs4 import BeautifulSoup
 import re
 from difflib import SequenceMatcher
 import json
-
+from pypdf import PdfReader, PdfWriter
+from io import BytesIO
 
 logger = get_logger("pdf_service")
 
@@ -512,42 +513,88 @@ Rules:
 
 
 
-def process_pdf(pdf_bytes: bytes, doc, db):
-    try:
-        start_time = time.time()
-        logger.info(f"Starting PDF processing for doc_id={doc.id}")
+def extract_pdf_page_range(
+    pdf_bytes: bytes,
+    start_page: int,
+    end_page: int,
+) -> bytes:
+    """
+    start_page / end_page are 1-based and inclusive
+    """
+    reader = PdfReader(BytesIO(pdf_bytes))
+    writer = PdfWriter()
 
-        html, usage = llm.generate_html_from_pdf(
-            prompt=PROMPT,
-            pdf_bytes=pdf_bytes
+    for i in range(start_page - 1, end_page):
+        writer.add_page(reader.pages[i])
+
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+def page_ranges(total_pages: int, chunk_size: int = 5):
+    for start in range(1, total_pages + 1, chunk_size):
+        end = min(start + chunk_size - 1, total_pages)
+        yield start, end
+def process_pdf(pdf_bytes: bytes, doc, db, chunk_size: int = 5):
+    start_time = time.time()
+    logger.info(f"[PDF:{doc.id}] Starting PDF-native chunked processing")
+
+    reader = PdfReader(BytesIO(pdf_bytes))
+    total_pages = len(reader.pages)
+
+    doc.total_pages = total_pages
+    doc.processed_pages = 0
+    db.commit()
+
+    full_html = []
+    tokens_per_page = {}
+    total_tokens = 0
+
+    for start_page, end_page in page_ranges(total_pages, chunk_size):
+        logger.info(
+            f"[PDF:{doc.id}] Processing pages {start_page}–{end_page}"
         )
 
-        # Check if the HTML contains any placeholder links (href="#")
-        if contains_placeholder_links(html):
-            logger.info("Placeholder links (#) detected, performing link extraction and fixing...")
-            
-            # Extract links from PDF with position information
+        chunk_pdf_bytes = extract_pdf_page_range(
+            pdf_bytes,
+            start_page,
+            end_page
+        )
+
+        html_chunk, usage = llm.generate_html_from_pdf(
+            prompt=PROMPT,
+            pdf_bytes=chunk_pdf_bytes,
+            # start_page=start_page,   # IMPORTANT
+            # end_page=end_page
+        )
+
+        # Optional: Fix placeholder links per chunk
+        if contains_placeholder_links(html_chunk):
+            logger.info(f"[PDF:{doc.id}] Fixing placeholder links")
             pdf_links = extract_pdf_links_with_positions(pdf_bytes)
-            
-            # Extract position data from HTML (if LLM provided it)
-            link_positions = extract_link_positions_from_html(html)
-            
-            # Fix placeholder links using position-based matching
-            html = fix_placeholder_links_with_positions(html, pdf_links, link_positions)
-        else:
-            logger.info("No placeholder links (#) detected, skipping link extraction and fixing steps.")
+            link_positions = extract_link_positions_from_html(html_chunk)
+            html_chunk = fix_placeholder_links_with_positions(
+                html_chunk,
+                pdf_links,
+                link_positions
+            )
 
-        doc.total_pages = usage.get("pages", None)
-        doc.processed_pages = doc.total_pages
-        doc.tokens_per_page = usage.get("tokens_per_page", {})
-        doc.total_tokens = usage.get("total_tokens", 0)
+        # Token accounting
+        chunk_tokens = usage.get("tokens_per_page", {})
+        for page, tokens in chunk_tokens.items():
+            tokens_per_page[str(page)] = tokens
+            total_tokens += tokens
 
+        # Update progress
+        pages_done = end_page - start_page + 1
+        doc.processed_pages += pages_done
+        doc.tokens_per_page = tokens_per_page
+        doc.total_tokens = total_tokens
         db.commit()
 
-        duration = round(time.time() - start_time, 2)
-        logger.info(f"Finished PDF processing in {duration}s")
+        full_html.append(html_chunk)
 
-        return f'<div class="pdf-content">\n{html}\n</div>'
-    except Exception as e:
-        logger.error(f"Error processing PDF: {e}", exc_info=True)
-        raise
+    duration = round(time.time() - start_time, 2)
+    logger.info(f"[PDF:{doc.id}] Finished in {duration}s")
+
+    return f'<div class="pdf-content">\n{"".join(full_html)}\n</div>'
