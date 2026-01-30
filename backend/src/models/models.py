@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
+from sqlalchemy import Column, Integer, String, DateTime, JSON
 from sqlalchemy.sql import func
 from config.database import Base
+from sqlalchemy.dialects.mysql import LONGTEXT
 
 class PDFDocument(Base):
     __tablename__ = "pdf_documents"
@@ -10,8 +11,8 @@ class PDFDocument(Base):
     # Must specify length for MySQL VARCHAR
     filename = Column(String(255), nullable=False)
     
-    original_html = Column(Text, nullable=True)
-    edited_html = Column(Text, nullable=True)
+    original_html = Column(LONGTEXT, nullable=True)
+    edited_html = Column(LONGTEXT, nullable=True)
 
     # progress
     status = Column(String(50), default="processing")  # Added length
